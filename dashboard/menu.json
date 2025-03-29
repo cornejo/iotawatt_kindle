@@ -1,0 +1,19 @@
+{
+    "items": [
+    {
+        "name": "Dashboard IotaWatt",
+        "priority": -999,
+        "exitmenu": false,
+        "refresh": false,
+        "status": false,
+        "action": "./bin/run.py"
+    }, {
+        "name": "Dashboard IotaWatt (Debug)",
+        "priority": -998,
+        "exitmenu": false,
+		"refresh": false,
+		"status": false,
+        "action": "./bin/run.py once"
+    }
+    ]
+}
