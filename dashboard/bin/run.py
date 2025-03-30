@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 import urllib.request
 import urllib.parse
 
@@ -343,7 +344,9 @@ def display_files(output_dir: str):
 
 
 def sleep(duration: int):
-    if True:
+    # Having this actually sleep is painful
+    # So.. don't - and externally power it instead
+    if False:
         time.sleep(2)
         with open("/sys/class/rtc/rtc1/wakealarm", "w") as f:
             pass
@@ -372,15 +375,42 @@ def display_file(filename: str):
     )
 
 
+def set_brightness(level: int):
+    for subdir in os.listdir("/sys/class/backlight"):
+        brightness = f"/sys/class/backlight/{subdir}/brightness"
+        print(brightness)
+        if os.path.exists(brightness):
+            print(f"Setting brightness to {level}")
+            with open(brightness, "w") as f:
+                f.write(str(level))
+
+
 def main():
-    while True:
-        output_dir = "/tmp/iotawatt/"
-        generate_files(output_dir)
+    try:
+        subprocess.run(["/usr/bin/lipc-set-prop", "com.lab126.powerd", "preventScreenSaver", "1"])
+        subprocess.run(["/usr/bin/lipc-set-prop", "com.lab126.deviced", "enable_touch", "0"])
+        set_brightness(0)
+        print("Starting")
 
-        display_files(output_dir)
+        while True:
+            output_dir = "/tmp/iotawatt/"
+            generate_files(output_dir)
 
-        if len(sys.argv) > 1:
-            break
+            display_files(output_dir)
+
+            if len(sys.argv) > 1:
+                break
+    except Exception:
+        subprocess.run(["fbink", "-c"])
+        error_message = traceback.format_exc()
+        for i, line in enumerate(error_message.split("\n")):
+            line = line.replace(get_script_dir() + "/", "")
+            subprocess.run(["fbink", "-x", "1", "-y", str(i + 1), line])
+        raise
+    finally:
+        subprocess.run(["/usr/bin/lipc-set-prop", "com.lab126.powerd", "preventScreenSaver", "0"])
+        subprocess.run(["/usr/bin/lipc-set-prop", "com.lab126.deviced", "enable_touch", "1"])
+        set_brightness(255)
 
 
 if __name__ == "__main__":
